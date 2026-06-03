@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { getSupabaseClient } from './supabase'
 import {
   signName, sortPlacements, PLANET_KEYS, parseSign,
@@ -78,7 +79,9 @@ export async function searchCelebrities(params: SearchParams = {}): Promise<{
   }
 }
 
-export async function getCelebrity(slug: string): Promise<CelebrityProfile | null> {
+// cache() deduplicates calls within a single render pass — generateMetadata and
+// the page component both call getCelebrity(slug), so this prevents 6 DB queries.
+export const getCelebrity = cache(async (slug: string): Promise<CelebrityProfile | null> => {
   const supabase = getSupabaseClient()
 
   const { data: celebrity, error: e1 } = await supabase
@@ -145,4 +148,4 @@ export async function getCelebrity(slug: string): Promise<CelebrityProfile | nul
       placements,
     },
   }
-}
+})

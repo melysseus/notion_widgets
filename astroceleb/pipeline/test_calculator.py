@@ -185,3 +185,47 @@ def test_ayanamsa_field():
 def test_house_system_field():
     result = calculate_chart(**BEYONCE)
     assert result.house_system == "whole_sign"
+
+
+# ── nakshatra ──────────────────────────────────────────────────────────────────
+
+def test_nakshatra_in_range():
+    result = calculate_chart(**BEYONCE)
+    for p in result.placements:
+        assert 1 <= p.nakshatra <= 27, f"{p.planet} nakshatra {p.nakshatra} out of 1–27 range"
+
+
+def test_nakshatra_name_matches_number():
+    from .calculator import NAKSHATRA_NAMES
+    result = calculate_chart(**BEYONCE)
+    for p in result.placements:
+        assert p.nakshatra_name == NAKSHATRA_NAMES[p.nakshatra - 1]
+
+
+def test_ascendant_nakshatra_in_range():
+    result = calculate_chart(**BEYONCE)
+    assert result.ascendant_nakshatra is not None
+    assert 1 <= result.ascendant_nakshatra <= 27
+
+
+def test_no_birth_time_no_ascendant_nakshatra():
+    result = calculate_chart(
+        birth_date=date(1981, 9, 4),
+        birth_time=None,
+        latitude=29.7604,
+        longitude=-95.3698,
+        timezone_name="America/Chicago",
+    )
+    assert result.ascendant_nakshatra is None
+    assert result.ascendant_nakshatra_name is None
+
+
+def test_nakshatra_consistent_with_absolute_degree():
+    """Each planet's nakshatra number must match its absolute degree bucket."""
+    result = calculate_chart(**BEYONCE)
+    span = 360.0 / 27
+    for p in result.placements:
+        expected = int((p.absolute_degree % 360.0) / span) + 1
+        assert p.nakshatra == expected, (
+            f"{p.planet}: degree {p.absolute_degree:.4f} → expected nak {expected}, got {p.nakshatra}"
+        )

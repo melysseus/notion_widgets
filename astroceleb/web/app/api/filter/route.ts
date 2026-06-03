@@ -1,27 +1,21 @@
 /**
  * GET /api/filter
  *
- * Dedicated planetary placement filter endpoint.
- * At least one planet=sign param is required.
+ * Dedicated filter endpoint — requires at least one planet or nakshatra filter.
  *
  * Query params:
- *   sun|moon|mercury|venus|mars|jupiter|saturn|rahu|ketu
- *              – sign filter, e.g. moon=virgo&mars=scorpio
- *   profession – narrow by profession, e.g. profession=actor
- *   limit      – default 20, max 100
- *   offset     – pagination offset, default 0
- *
- * Response includes active_filters[] so the UI can render the active chip labels
- * without re-parsing the URL.
- *
- * Example:
- *   GET /api/filter?sun=leo&moon=virgo
- *   GET /api/filter?mars=scorpio&profession=actor
+ *   sun|moon|…   – planet in sign, e.g. moon=virgo
+ *   moon_nak|…   – planet in nakshatra, e.g. moon_nak=shravana
+ *   asc          – ascendant sign
+ *   asc_nak      – ascendant nakshatra
+ *   profession   – e.g. profession=actor
+ *   limit        – default 20, max 100
+ *   offset       – default 0
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseClient } from '@/lib/supabase'
-import { parsePlanetFilters, signName } from '@/lib/astro'
+import { parsePlanetFilters, parseNakshatra, parseSign, signName, PLANET_KEYS } from '@/lib/astro'
 import type { CelebrityListItem, FilterResponse } from '@/types'
 
 export const runtime = 'nodejs'
@@ -29,18 +23,30 @@ export const runtime = 'nodejs'
 export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams
 
-  const filters    = parsePlanetFilters(p)
-  const profession = p.get('profession') || null
-  const limit      = Math.min(parseInt(p.get('limit')  ?? '20'), 100)
-  const offset     = Math.max(parseInt(p.get('offset') ?? '0'),  0)
+  const planetFilters = parsePlanetFilters(p)
 
-  if (filters.length === 0) {
+  const nakshatraFilters = PLANET_KEYS.flatMap(planet => {
+    const raw = p.get(`${planet}_nak`)
+    if (!raw) return []
+    const nak = parseNakshatra(raw)
+    return nak != null ? [{ planet, nakshatra: nak }] : []
+  })
+
+  const ascendantFilter          = p.get('asc')     ? parseSign(p.get('asc')!)         : null
+  const ascendantNakshatraFilter = p.get('asc_nak') ? parseNakshatra(p.get('asc_nak')!) : null
+  const profession               = p.get('profession') || null
+  const limit                    = Math.min(parseInt(p.get('limit')  ?? '20'), 100)
+  const offset                   = Math.max(parseInt(p.get('offset') ?? '0'),  0)
+
+  const hasFilter =
+    planetFilters.length > 0 ||
+    nakshatraFilters.length > 0 ||
+    ascendantFilter != null ||
+    ascendantNakshatraFilter != null
+
+  if (!hasFilter) {
     return NextResponse.json(
-      {
-        error:   'At least one planet filter is required.',
-        example: '/api/filter?moon=virgo',
-        planets: ['sun','moon','mercury','venus','mars','jupiter','saturn','rahu','ketu'],
-      },
+      { error: 'At least one filter is required.', example: '/api/filter?moon=virgo' },
       { status: 400 },
     )
   }
@@ -49,11 +55,14 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabaseClient()
 
     const { data, error } = await supabase.rpc('search_celebrities', {
-      name_query:     null,
-      planet_filters: filters,
-      profession:     profession,
-      lim:            limit,
-      off:            offset,
+      name_query:                 null,
+      planet_filters:             planetFilters,
+      nakshatra_filters:          nakshatraFilters,
+      ascendant_filter:           ascendantFilter,
+      ascendant_nakshatra_filter: ascendantNakshatraFilter,
+      profession,
+      lim:                        limit,
+      off:                        offset,
     })
 
     if (error) {
@@ -73,24 +82,28 @@ export async function GET(req: NextRequest) {
       rodden_rating:    row.rodden_rating ?? null,
       professions:      row.professions ?? [],
       image_url:        row.image_url ?? null,
+      sun_sign:         row.sun_sign ?? null,
+      moon_sign:        row.moon_sign ?? null,
       ascendant:        row.ascendant_sign
         ? { sign: row.ascendant_sign, sign_name: signName(row.ascendant_sign) }
         : null,
     }))
 
     const response: FilterResponse = {
-      data:   celebrities,
-      count:  totalCount,
+      data:           celebrities,
+      count:          totalCount,
       limit,
       offset,
-      active_filters: filters.map((f) => ({
+      active_filters: planetFilters.map((f) => ({
         planet:    f.planet,
         sign:      f.sign,
         sign_name: signName(f.sign),
       })),
     }
 
-    return NextResponse.json(response)
+    return NextResponse.json(response, {
+      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' },
+    })
   } catch (err) {
     console.error('[/api/filter] Unexpected error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

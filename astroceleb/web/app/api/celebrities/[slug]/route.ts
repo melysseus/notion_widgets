@@ -2,12 +2,11 @@
  * GET /api/celebrities/[slug]
  *
  * Returns full celebrity profile including all planetary placements.
- * Uses the slug field (not the UUID) so URLs stay human-readable.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseClient } from '@/lib/supabase'
-import { signName, sortPlacements } from '@/lib/astro'
+import { signName, sortPlacements, getNakshatraData } from '@/lib/astro'
 import type { CelebrityProfile, Placement } from '@/types'
 
 export const runtime = 'nodejs'
@@ -44,7 +43,6 @@ export async function GET(
     .single()
 
   if (chartError?.code === 'PGRST116' || !chart) {
-    // Celebrity exists but chart hasn't been calculated yet
     return NextResponse.json({ error: 'Chart not available' }, { status: 404 })
   }
   if (chartError) {
@@ -63,38 +61,49 @@ export async function GET(
     return NextResponse.json({ error: 'Database error' }, { status: 502 })
   }
 
-  // Enrich with sign names and sort into canonical Vedic order
   const placements: Placement[] = sortPlacements(
-    (rawPlacements ?? []).map((p) => ({ ...p, sign_name: signName(p.sign) })),
+    (rawPlacements ?? []).map((p) => ({
+      ...p,
+      sign_name:      signName(p.sign),
+      nakshatra_name: p.nakshatra ? (getNakshatraData(p.nakshatra)?.name ?? null) : null,
+    })),
   )
 
   // ── 4. build response ──────────────────────────────────────────────────────
   const profile: CelebrityProfile = {
-    id:              celebrity.id,
-    name:            celebrity.name,
-    slug:            celebrity.slug,
-    birth_date:      celebrity.birth_date,
-    birth_time:      celebrity.birth_time ?? null,
+    id:               celebrity.id,
+    name:             celebrity.name,
+    slug:             celebrity.slug,
+    birth_date:       celebrity.birth_date,
+    birth_time:       celebrity.birth_time ?? null,
     birth_time_known: celebrity.birth_time_known,
-    rodden_rating:   celebrity.rodden_rating ?? null,
-    birth_place:     celebrity.birth_place ?? null,
-    professions:     celebrity.professions ?? [],
-    image_url:       celebrity.image_url ?? null,
-    notes:           celebrity.notes ?? null,
-    ascendant:       chart.ascendant_sign
+    rodden_rating:    celebrity.rodden_rating ?? null,
+    birth_place:      celebrity.birth_place ?? null,
+    professions:      celebrity.professions ?? [],
+    image_url:        celebrity.image_url ?? null,
+    notes:            celebrity.notes ?? null,
+    sun_sign:         null,
+    moon_sign:        null,
+    ascendant:        chart.ascendant_sign
       ? { sign: chart.ascendant_sign, sign_name: signName(chart.ascendant_sign) }
       : null,
     chart: {
       ascendant: chart.ascendant_sign
         ? {
-            sign:       chart.ascendant_sign,
-            sign_name:  signName(chart.ascendant_sign),
-            degree:     chart.ascendant_degree ?? 0,
+            sign:           chart.ascendant_sign,
+            sign_name:      signName(chart.ascendant_sign),
+            degree:         chart.ascendant_degree ?? 0,
+            nakshatra:      chart.ascendant_nakshatra ?? null,
+            nakshatra_name: chart.ascendant_nakshatra
+              ? (getNakshatraData(chart.ascendant_nakshatra)?.name ?? null)
+              : null,
           }
         : null,
       placements,
     },
   }
 
-  return NextResponse.json(profile)
+  return NextResponse.json(profile, {
+    headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+  })
 }
