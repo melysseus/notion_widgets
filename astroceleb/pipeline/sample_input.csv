@@ -1,0 +1,7 @@
+name,slug,birth_date,birth_time,latitude,longitude,timezone_name
+Beyoncé,beyonce,1981-09-04,09:00:00,29.7604,-95.3698,America/Chicago
+Elvis Presley,elvis-presley,1935-01-08,04:35:00,33.5946,-86.8716,America/Chicago
+Oprah Winfrey,oprah-winfrey,1954-01-29,04:30:00,31.3271,-89.2903,America/Chicago
+Elon Musk,elon-musk,1971-06-28,06:30:00,-25.7479,28.2293,Africa/Johannesburg
+Marilyn Monroe,marilyn-monroe,1926-06-01,09:30:00,34.0522,-118.2437,America/Los_Angeles
+Unknown Time Test,unknown-time-test,1990-03-15,,40.7128,-74.0060,America/New_York

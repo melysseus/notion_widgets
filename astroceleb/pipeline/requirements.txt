@@ -1,0 +1,5 @@
+# Core
+pyswisseph>=2.10.3
+
+# Timezone data — required on Windows and Alpine Linux, harmless on macOS/Ubuntu
+tzdata>=2024.1
