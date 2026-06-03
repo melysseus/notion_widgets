@@ -1,7 +1,20 @@
-name,slug,birth_date,birth_time,latitude,longitude,timezone_name
-Beyoncé,beyonce,1981-09-04,09:00:00,29.7604,-95.3698,America/Chicago
-Elvis Presley,elvis-presley,1935-01-08,04:35:00,33.5946,-86.8716,America/Chicago
-Oprah Winfrey,oprah-winfrey,1954-01-29,04:30:00,31.3271,-89.2903,America/Chicago
-Elon Musk,elon-musk,1971-06-28,06:30:00,-25.7479,28.2293,Africa/Johannesburg
-Marilyn Monroe,marilyn-monroe,1926-06-01,09:30:00,34.0522,-118.2437,America/Los_Angeles
-Unknown Time Test,unknown-time-test,1990-03-15,,40.7128,-74.0060,America/New_York
+name,slug,birth_date,birth_time,latitude,longitude,timezone_name,rodden_rating
+Beyonce,beyonce,1981-09-04,09:00:00,29.7604,-95.3698,America/Chicago,AA
+Kim Kardashian,kim-kardashian,1980-10-21,10:46:00,34.0522,-118.2437,America/Los_Angeles,AA
+Ariana Grande,ariana-grande,1993-06-26,09:16:00,26.1224,-80.1373,America/New_York,AA
+Angelina Jolie,angelina-jolie,1975-06-04,09:09:00,34.0522,-118.2437,America/Los_Angeles,AA
+Megan Fox,megan-fox,1986-05-16,,,34.0522,-118.2437,America/Los_Angeles,X
+Lana Del Rey,lana-del-rey,1985-06-21,,40.7128,-74.0060,America/New_York,X
+Kylie Jenner,kylie-jenner,1997-08-10,11:00:00,34.0522,-118.2437,America/Los_Angeles,A
+Kendall Jenner,kendall-jenner,1995-11-03,,,34.0522,-118.2437,America/Los_Angeles,X
+Madison Beer,madison-beer,2000-03-05,,40.7128,-74.0060,America/New_York,X
+Hailey Bieber,hailey-bieber,1996-11-22,,,33.4484,-112.0740,America/Phoenix,X
+Anya Taylor-Joy,anya-taylor-joy,1996-04-16,,,25.7617,-80.1918,America/New_York,X
+Alexa Demie,alexa-demie,1990-12-11,,,34.0522,-118.2437,America/Los_Angeles,X
+Adriana Lima,adriana-lima,1981-06-12,,,-38.5016,-12.9714,America/Bahia,X
+Candice Swanepoel,candice-swanepoel,1988-10-20,,,-26.7145,27.0943,Africa/Johannesburg,X
+Miranda Kerr,miranda-kerr,1983-04-20,,,-33.8688,151.2093,Australia/Sydney,X
+Sabrina Carpenter,sabrina-carpenter,1999-05-11,,40.0456,-75.3411,America/New_York,X
+Cindy Kimberly,cindy-kimberly,1998-11-16,,,51.6978,-9.5044,Europe/Madrid,X
+Elvis Presley,elvis-presley,1935-01-08,04:35:00,33.5946,-86.8716,America/Chicago,AA
+Marilyn Monroe,marilyn-monroe,1926-06-01,09:30:00,34.0522,-118.2437,America/Los_Angeles,AA

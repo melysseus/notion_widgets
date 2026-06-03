@@ -27,6 +27,13 @@ from .calculator import ChartError, calculate_chart
 
 _REQUIRED_COLUMNS = {"name", "birth_date", "latitude", "longitude"}
 
+# birth_time_accuracy values the user may supply → Rodden rating equivalent
+_ACCURACY_TO_RODDEN = {
+    "confirmed": "AA",
+    "estimated": "B",
+    "unknown":   "X",
+}
+
 
 # ── parsers ────────────────────────────────────────────────────────────────────
 
@@ -87,8 +94,18 @@ def process_csv(
             raise ValueError(f"CSV is missing required columns: {sorted(missing)}")
 
         for row_num, row in enumerate(reader, start=2):  # row 1 = header
-            name = row.get("name", "").strip()
+            name = row.get("name") or row.get("full_name", "")
+            name = name.strip()
             slug = row.get("slug", "").strip() or None
+
+            # Accept either rodden_rating directly or the simplified birth_time_accuracy
+            rodden = row.get("rodden_rating", "").strip() or None
+            if not rodden:
+                accuracy = row.get("birth_time_accuracy", "").strip().lower()
+                rodden = _ACCURACY_TO_RODDEN.get(accuracy)
+
+            profession_raw = row.get("profession", "").strip()
+            professions = [p.strip() for p in profession_raw.split(",") if p.strip()]
 
             try:
                 chart = calculate_chart(
@@ -99,22 +116,26 @@ def process_csv(
                     timezone_name=row.get("timezone_name", "").strip() or "UTC",
                 )
                 results.append({
-                    "name": name,
-                    "slug": slug,
+                    "name":        name,
+                    "slug":        slug,
+                    "professions": professions,
+                    "rodden_rating": rodden,
                     "success": True,
-                    "chart": chart.to_dict(),
-                    "error": None,
+                    "chart":   chart.to_dict(),
+                    "error":   None,
                 })
 
             except (ChartError, ValueError, KeyError) as exc:
                 if stop_on_error:
                     raise
                 results.append({
-                    "name": name,
-                    "slug": slug,
-                    "success": False,
-                    "chart": None,
-                    "error": f"Row {row_num}: {type(exc).__name__}: {exc}",
+                    "name":          name,
+                    "slug":          slug,
+                    "professions":   professions,
+                    "rodden_rating": rodden,
+                    "success":       False,
+                    "chart":         None,
+                    "error":         f"Row {row_num}: {type(exc).__name__}: {exc}",
                 })
 
     return results

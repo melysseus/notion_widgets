@@ -22,16 +22,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-// ── Rodden rating labels (shown on hover) ─────────────────────────────────────
+// ── Confidence badge from Rodden rating ──────────────────────────────────────
+// AA/A = reliable birth time  B/C = approximate  DD/X/XX = unknown or conflicting
 
-const RODDEN: Record<string, string> = {
-  AA: 'AA — Birth record (most reliable)',
-  A:  'A — From memory or autobiography',
-  B:  'B — Biography or non-autobiographical source',
-  C:  'C — Caution, less-reliable source',
-  DD: 'DD — Dirty data, two or more conflicting dates',
-  X:  'X — No birth time',
-  XX: 'XX — No confirmed birth date',
+type DotColor = 'green' | 'amber' | 'red'
+
+const RODDEN_CONFIDENCE: Record<string, { color: DotColor; label: string; detail: string }> = {
+  AA: { color: 'green', label: 'Verified birth time',    detail: 'AA — Birth certificate or official record' },
+  A:  { color: 'green', label: 'Verified birth time',    detail: 'A — Autobiography or personal statement'   },
+  B:  { color: 'amber', label: 'Approximate birth time', detail: 'B — Biography or non-autobiographical'     },
+  C:  { color: 'amber', label: 'Approximate birth time', detail: 'C — Caution, reliability uncertain'        },
+  DD: { color: 'red',   label: 'Conflicting data',       detail: 'DD — Two or more conflicting sources'      },
+  X:  { color: 'red',   label: 'Birth time unknown',     detail: 'X — No birth time on record'               },
+  XX: { color: 'red',   label: 'Birth date unconfirmed', detail: 'XX — No confirmed birth date'              },
+}
+
+const DOT_CLASS: Record<DotColor, string> = {
+  green: 'bg-green-400',
+  amber: 'bg-amber-400',
+  red:   'bg-red-400',
 }
 
 // ── page ──────────────────────────────────────────────────────────────────────
@@ -89,14 +98,19 @@ export default async function CelebrityPage({ params }: PageProps) {
               </p>
             )}
 
-            {celebrity.rodden_rating && (
-              <span
-                className="mt-2 inline-block rounded border border-stone-200 px-1.5 py-0.5 text-xs text-stone-400"
-                title={RODDEN[celebrity.rodden_rating] ?? celebrity.rodden_rating}
-              >
-                {celebrity.rodden_rating}
-              </span>
-            )}
+            {celebrity.rodden_rating && (() => {
+              const conf = RODDEN_CONFIDENCE[celebrity.rodden_rating]
+              if (!conf) return null
+              return (
+                <div
+                  className="mt-2 flex items-center gap-1.5"
+                  title={conf.detail}
+                >
+                  <span className={`h-2 w-2 rounded-full ${DOT_CLASS[conf.color]}`} />
+                  <span className="text-xs text-stone-400">{conf.label}</span>
+                </div>
+              )
+            })()}
           </div>
         </div>
 
