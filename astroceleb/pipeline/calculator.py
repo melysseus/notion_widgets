@@ -22,6 +22,15 @@ SIGN_NAMES: list[str] = [
     "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
 ]
 
+# 27 lunar mansions (nakshatras), each spanning 360/27 = 13°20'
+NAKSHATRA_NAMES: list[str] = [
+    "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra",
+    "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni",
+    "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha",
+    "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana",
+    "Dhanishtha", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati",
+]
+
 # Ordered for deterministic JSON output. Ketu is derived from Rahu, not fetched.
 _PLANET_IDS: list[tuple[str, int]] = [
     ("sun",     swe.SUN),
@@ -49,6 +58,8 @@ class Placement:
     absolute_degree: float  # 0.0000–359.9999
     house: int | None       # 1–12; None when birth time is unknown
     retrograde: bool
+    nakshatra: int          # 1–27
+    nakshatra_name: str
 
 
 @dataclass
@@ -58,7 +69,9 @@ class ChartResult:
     birth_time_known: bool
     ascendant_sign: int | None
     ascendant_sign_name: str | None
-    ascendant_degree: float | None  # degree within the rising sign
+    ascendant_degree: float | None       # degree within the rising sign
+    ascendant_nakshatra: int | None      # 1–27
+    ascendant_nakshatra_name: str | None
     placements: list[Placement]
 
     def to_dict(self) -> dict:
@@ -70,6 +83,8 @@ class ChartResult:
                 "sign": self.ascendant_sign,
                 "sign_name": self.ascendant_sign_name,
                 "degree": self.ascendant_degree,
+                "nakshatra": self.ascendant_nakshatra,
+                "nakshatra_name": self.ascendant_nakshatra_name,
             } if self.birth_time_known else None,
             "placements": [asdict(p) for p in self.placements],
         }
@@ -140,6 +155,12 @@ def _degree_to_sign(degree: float) -> tuple[int, float]:
     return sign, degree % 30.0
 
 
+def _degree_to_nakshatra(absolute_degree: float) -> tuple[int, str]:
+    """Absolute sidereal degree → (nakshatra number 1–27, name)."""
+    idx = int((absolute_degree % 360.0) / (360.0 / 27))
+    return idx + 1, NAKSHATRA_NAMES[idx]
+
+
 def _whole_sign_house(planet_sign: int, asc_sign: int) -> int:
     """Whole-sign house of a planet given the ascending sign."""
     return ((planet_sign - asc_sign) % 12) + 1
@@ -189,6 +210,8 @@ def calculate_chart(
     asc_sign: int | None = None
     asc_sign_name: str | None = None
     asc_degree: float | None = None
+    asc_nakshatra: int | None = None
+    asc_nakshatra_name: str | None = None
 
     if birth_time_known:
         try:
@@ -203,6 +226,7 @@ def calculate_chart(
         asc_sign, deg_in_sign = _degree_to_sign(sidereal_asc)
         asc_sign_name = SIGN_NAMES[asc_sign - 1]
         asc_degree = round(deg_in_sign, 4)
+        asc_nakshatra, asc_nakshatra_name = _degree_to_nakshatra(sidereal_asc)
 
     # ── planets ────────────────────────────────────────────────────────────────
     placements: list[Placement] = []
@@ -217,6 +241,7 @@ def calculate_chart(
         speed   = xx[3]   # degrees/day; negative = retrograde
 
         sign, deg_in_sign = _degree_to_sign(abs_deg)
+        nak, nak_name = _degree_to_nakshatra(abs_deg)
 
         placements.append(Placement(
             planet=planet_name,
@@ -226,12 +251,15 @@ def calculate_chart(
             absolute_degree=round(abs_deg, 4),
             house=_whole_sign_house(sign, asc_sign) if birth_time_known else None,
             retrograde=speed < 0,
+            nakshatra=nak,
+            nakshatra_name=nak_name,
         ))
 
     # ── ketu (South Node = Rahu + 180°) ───────────────────────────────────────
     rahu = next(p for p in placements if p.planet == "rahu")
     ketu_abs = (rahu.absolute_degree + 180.0) % 360.0
     ketu_sign, ketu_deg = _degree_to_sign(ketu_abs)
+    ketu_nak, ketu_nak_name = _degree_to_nakshatra(ketu_abs)
 
     placements.append(Placement(
         planet="ketu",
@@ -241,6 +269,8 @@ def calculate_chart(
         absolute_degree=round(ketu_abs, 4),
         house=_whole_sign_house(ketu_sign, asc_sign) if birth_time_known else None,
         retrograde=True,  # mean node axis is always retrograde
+        nakshatra=ketu_nak,
+        nakshatra_name=ketu_nak_name,
     ))
 
     return ChartResult(
@@ -250,5 +280,7 @@ def calculate_chart(
         ascendant_sign=asc_sign,
         ascendant_sign_name=asc_sign_name,
         ascendant_degree=asc_degree,
+        ascendant_nakshatra=asc_nakshatra,
+        ascendant_nakshatra_name=asc_nakshatra_name,
         placements=placements,
     )

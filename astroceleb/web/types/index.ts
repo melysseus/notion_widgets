@@ -33,6 +33,7 @@ export interface PlacementRow {
   absolute_degree: number
   house: number | null
   retrograde: boolean
+  nakshatra: number | null    // 1–27; null on older rows before migration
 }
 
 // ── API response shapes ────────────────────────────────────────────────────────
@@ -40,11 +41,14 @@ export interface PlacementRow {
 export interface Ascendant {
   sign: number
   sign_name: string
-  degree?: number  // included on profile, omitted on list
+  degree?: number
+  nakshatra?: number | null
+  nakshatra_name?: string | null
 }
 
 export interface Placement extends PlacementRow {
-  sign_name: string  // enriched in API layer
+  sign_name: string           // enriched in API layer
+  nakshatra_name: string | null
 }
 
 export interface CelebrityListItem {

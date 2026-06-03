@@ -102,3 +102,60 @@ export function formatBirthDate(dateStr: string): string {
     year: 'numeric', month: 'long', day: 'numeric',
   })
 }
+
+// ── nakshatras ────────────────────────────────────────────────────────────────
+// 27 lunar mansions, each spanning 360/27 = 13°20'.
+
+export const NAKSHATRA_DATA = [
+  { number: 1,  name: 'Ashwini',           slug: 'ashwini' },
+  { number: 2,  name: 'Bharani',           slug: 'bharani' },
+  { number: 3,  name: 'Krittika',          slug: 'krittika' },
+  { number: 4,  name: 'Rohini',            slug: 'rohini' },
+  { number: 5,  name: 'Mrigashira',        slug: 'mrigashira' },
+  { number: 6,  name: 'Ardra',             slug: 'ardra' },
+  { number: 7,  name: 'Punarvasu',         slug: 'punarvasu' },
+  { number: 8,  name: 'Pushya',            slug: 'pushya' },
+  { number: 9,  name: 'Ashlesha',          slug: 'ashlesha' },
+  { number: 10, name: 'Magha',             slug: 'magha' },
+  { number: 11, name: 'Purva Phalguni',    slug: 'purva-phalguni' },
+  { number: 12, name: 'Uttara Phalguni',   slug: 'uttara-phalguni' },
+  { number: 13, name: 'Hasta',             slug: 'hasta' },
+  { number: 14, name: 'Chitra',            slug: 'chitra' },
+  { number: 15, name: 'Swati',             slug: 'swati' },
+  { number: 16, name: 'Vishakha',          slug: 'vishakha' },
+  { number: 17, name: 'Anuradha',          slug: 'anuradha' },
+  { number: 18, name: 'Jyeshtha',          slug: 'jyeshtha' },
+  { number: 19, name: 'Mula',              slug: 'mula' },
+  { number: 20, name: 'Purva Ashadha',     slug: 'purva-ashadha' },
+  { number: 21, name: 'Uttara Ashadha',    slug: 'uttara-ashadha' },
+  { number: 22, name: 'Shravana',          slug: 'shravana' },
+  { number: 23, name: 'Dhanishtha',        slug: 'dhanishtha' },
+  { number: 24, name: 'Shatabhisha',       slug: 'shatabhisha' },
+  { number: 25, name: 'Purva Bhadrapada',  slug: 'purva-bhadrapada' },
+  { number: 26, name: 'Uttara Bhadrapada', slug: 'uttara-bhadrapada' },
+  { number: 27, name: 'Revati',            slug: 'revati' },
+] as const
+
+export type NakshatraData = typeof NAKSHATRA_DATA[number]
+
+/** slug → nakshatra number (1–27) */
+export const NAKSHATRA_MAP: Record<string, number> = Object.fromEntries(
+  NAKSHATRA_DATA.map(n => [n.slug, n.number]),
+)
+
+export function parseNakshatra(raw: string): number | null {
+  return NAKSHATRA_MAP[raw.toLowerCase().trim()] ?? null
+}
+
+export function getNakshatraData(n: number): NakshatraData | null {
+  return NAKSHATRA_DATA.find(nd => nd.number === n) ?? null
+}
+
+// ── professions ───────────────────────────────────────────────────────────────
+
+export const PROFESSIONS = [
+  'actor', 'musician', 'athlete', 'politician', 'director',
+  'model', 'comedian', 'author', 'entrepreneur', 'artist',
+] as const
+
+export type Profession = typeof PROFESSIONS[number]

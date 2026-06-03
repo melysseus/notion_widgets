@@ -1,10 +1,17 @@
 import { getSupabaseClient } from './supabase'
-import { signName, sortPlacements, PLANET_KEYS, parseSign } from './astro'
+import {
+  signName, sortPlacements, PLANET_KEYS, parseSign,
+  parseNakshatra, getNakshatraData,
+} from './astro'
 import type { CelebrityListItem, CelebrityProfile, Placement } from '../types'
+
+// URL param keys that carry nakshatra filters, e.g. "moon_nak", "asc_nak"
+const NAK_SUFFIX = '_nak'
 
 export interface SearchParams {
   q?: string | null
-  asc?: string | null       // Rising sign filter (ascendant)
+  asc?: string | null        // ascendant sign filter
+  asc_nak?: string | null    // ascendant nakshatra filter
   profession?: string | null
   limit?: number
   offset?: number
@@ -17,6 +24,7 @@ export async function searchCelebrities(params: SearchParams = {}): Promise<{
 }> {
   const supabase = getSupabaseClient()
 
+  // Planet-in-sign filters: ?moon=virgo → [{planet:'moon', sign:6}]
   const planetFilters = PLANET_KEYS.flatMap(planet => {
     const raw = params[planet]
     if (!raw || typeof raw !== 'string') return []
@@ -24,15 +32,26 @@ export async function searchCelebrities(params: SearchParams = {}): Promise<{
     return sign != null ? [{ planet, sign }] : []
   })
 
-  const ascFilter = params.asc ? parseSign(params.asc) : null
+  // Planet-in-nakshatra filters: ?moon_nak=shravana → [{planet:'moon', nakshatra:22}]
+  const nakshatraFilters = PLANET_KEYS.flatMap(planet => {
+    const raw = params[`${planet}${NAK_SUFFIX}`]
+    if (!raw || typeof raw !== 'string') return []
+    const nakshatra = parseNakshatra(raw)
+    return nakshatra != null ? [{ planet, nakshatra }] : []
+  })
+
+  const ascFilter    = params.asc     ? parseSign(params.asc as string)         : null
+  const ascNakFilter = params.asc_nak ? parseNakshatra(params.asc_nak as string) : null
 
   const { data, error } = await supabase.rpc('search_celebrities', {
-    name_query:       params.q ?? null,
-    planet_filters:   planetFilters,
-    ascendant_filter: ascFilter,
-    profession:       params.profession ?? null,
-    lim:              params.limit ?? 20,
-    off:              params.offset ?? 0,
+    name_query:                 params.q ?? null,
+    planet_filters:             planetFilters,
+    nakshatra_filters:          nakshatraFilters,
+    ascendant_filter:           ascFilter,
+    ascendant_nakshatra_filter: ascNakFilter,
+    profession:                 params.profession ?? null,
+    lim:                        params.limit ?? 20,
+    off:                        params.offset ?? 0,
   })
 
   if (error) throw new Error(`Search query failed: ${error.message}`)
@@ -86,7 +105,11 @@ export async function getCelebrity(slug: string): Promise<CelebrityProfile | nul
     .eq('chart_id', chart.id)
 
   const placements: Placement[] = sortPlacements(
-    (rawPlacements ?? []).map(p => ({ ...p, sign_name: signName(p.sign) })),
+    (rawPlacements ?? []).map(p => ({
+      ...p,
+      sign_name:     signName(p.sign),
+      nakshatra_name: p.nakshatra ? (getNakshatraData(p.nakshatra)?.name ?? null) : null,
+    })),
   )
 
   const sunSign  = placements.find(p => p.planet === 'sun')?.sign  ?? null
@@ -111,9 +134,13 @@ export async function getCelebrity(slug: string): Promise<CelebrityProfile | nul
       : null,
     chart: {
       ascendant: chart.ascendant_sign ? {
-        sign:      chart.ascendant_sign,
-        sign_name: signName(chart.ascendant_sign),
-        degree:    chart.ascendant_degree ?? 0,
+        sign:           chart.ascendant_sign,
+        sign_name:      signName(chart.ascendant_sign),
+        degree:         chart.ascendant_degree ?? 0,
+        nakshatra:      chart.ascendant_nakshatra ?? null,
+        nakshatra_name: chart.ascendant_nakshatra
+          ? (getNakshatraData(chart.ascendant_nakshatra)?.name ?? null)
+          : null,
       } : null,
       placements,
     },

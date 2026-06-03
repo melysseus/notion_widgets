@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Header } from '@/components/Header'
 import { SearchBar } from '@/components/SearchBar'
 import { FilterChips } from '@/components/FilterChips'
+import { FilterBuilder } from '@/components/FilterBuilder'
 import { CelebrityCard } from '@/components/CelebrityCard'
 import { searchCelebrities } from '@/lib/queries'
 
@@ -31,11 +32,13 @@ async function Results({ searchParams }: { searchParams: RawParams }) {
   const params = {
     q:          str(searchParams.q),
     asc:        str(searchParams.asc),
+    asc_nak:    str(searchParams.asc_nak),
     profession: str(searchParams.profession),
     ...Object.fromEntries(
-      planets
-        .filter(p => searchParams[p])
-        .map(p => [p, str(searchParams[p])]),
+      planets.flatMap(p => [
+        [p, str(searchParams[p])],
+        [`${p}_nak`, str(searchParams[`${p}_nak`])],
+      ]).filter(([, v]) => v != null),
     ),
   }
 
@@ -75,10 +78,13 @@ export default function SearchPage({ searchParams }: { searchParams: RawParams }
       <Header />
       <main className="mx-auto max-w-5xl px-4 py-10">
 
-        {/* Search bar + active filter chips */}
+        {/* Search bar + filter builder + active filter chips */}
         <div className="mb-8 space-y-3">
           <Suspense>
             <SearchBar />
+          </Suspense>
+          <Suspense>
+            <FilterBuilder />
           </Suspense>
           <Suspense>
             <FilterChips />
