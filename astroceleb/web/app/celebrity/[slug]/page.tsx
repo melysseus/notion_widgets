@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Header } from '@/components/Header'
 import { ChartTable } from '@/components/ChartTable'
 import { SignBadge } from '@/components/SignBadge'
@@ -67,10 +68,11 @@ export default async function CelebrityPage({ params }: PageProps) {
         {/* Celebrity header */}
         <div className="mb-10 flex items-start gap-5">
           {celebrity.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={celebrity.image_url}
               alt={celebrity.name}
+              width={80}
+              height={80}
               className="h-20 w-20 flex-none rounded-full object-cover ring-1 ring-stone-200"
             />
           ) : (

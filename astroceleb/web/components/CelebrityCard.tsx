@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { SignBadge } from './SignBadge'
 import { formatBirthDate } from '@/lib/astro'
 import type { CelebrityListItem } from '@/types'
@@ -19,10 +20,11 @@ export function CelebrityCard({ celebrity: c }: { celebrity: CelebrityListItem }
       {/* Identity row */}
       <div className="mb-3 flex items-center gap-3">
         {c.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={c.image_url}
             alt={c.name}
+            width={44}
+            height={44}
             className="h-11 w-11 flex-none rounded-full object-cover ring-1 ring-stone-200"
           />
         ) : (
