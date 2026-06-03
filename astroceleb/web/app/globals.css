@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-stone-50 text-stone-900 antialiased;
+  }
+}
+
+@layer utilities {
+  /* Ensure degree strings align nicely in table cells */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}

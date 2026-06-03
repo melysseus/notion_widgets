@@ -53,3 +53,52 @@ export function sortPlacements<T extends { planet: string }>(placements: T[]): T
     (a, b) => (order[a.planet] ?? 99) - (order[b.planet] ?? 99),
   )
 }
+
+// ── display data for UI components ────────────────────────────────────────────
+
+export type SignElement = 'fire' | 'earth' | 'air' | 'water'
+
+export const SIGN_DATA = [
+  { number: 1,  name: 'Aries',       symbol: '♈', element: 'fire'  as SignElement },
+  { number: 2,  name: 'Taurus',      symbol: '♉', element: 'earth' as SignElement },
+  { number: 3,  name: 'Gemini',      symbol: '♊', element: 'air'   as SignElement },
+  { number: 4,  name: 'Cancer',      symbol: '♋', element: 'water' as SignElement },
+  { number: 5,  name: 'Leo',         symbol: '♌', element: 'fire'  as SignElement },
+  { number: 6,  name: 'Virgo',       symbol: '♍', element: 'earth' as SignElement },
+  { number: 7,  name: 'Libra',       symbol: '♎', element: 'air'   as SignElement },
+  { number: 8,  name: 'Scorpio',     symbol: '♏', element: 'water' as SignElement },
+  { number: 9,  name: 'Sagittarius', symbol: '♐', element: 'fire'  as SignElement },
+  { number: 10, name: 'Capricorn',   symbol: '♑', element: 'earth' as SignElement },
+  { number: 11, name: 'Aquarius',    symbol: '♒', element: 'air'   as SignElement },
+  { number: 12, name: 'Pisces',      symbol: '♓', element: 'water' as SignElement },
+] as const
+
+export function getSignData(n: number) {
+  return SIGN_DATA.find(s => s.number === n) ?? null
+}
+
+export const PLANET_DISPLAY: Record<string, { label: string; symbol: string }> = {
+  sun:     { label: 'Sun',     symbol: '☉' },
+  moon:    { label: 'Moon',    symbol: '☽' },
+  mercury: { label: 'Mercury', symbol: '☿' },
+  venus:   { label: 'Venus',   symbol: '♀' },
+  mars:    { label: 'Mars',    symbol: '♂' },
+  jupiter: { label: 'Jupiter', symbol: '♃' },
+  saturn:  { label: 'Saturn',  symbol: '♄' },
+  rahu:    { label: 'Rahu',    symbol: '☊' },
+  ketu:    { label: 'Ketu',    symbol: '☋' },
+}
+
+/** Format decimal degrees as "18°14'" */
+export function formatDegree(decimal: number): string {
+  const deg = Math.floor(decimal)
+  const min = Math.round((decimal - deg) * 60)
+  return `${deg}°${String(min).padStart(2, '0')}'`
+}
+
+/** Format "YYYY-MM-DD" as "September 4, 1981" */
+export function formatBirthDate(dateStr: string): string {
+  return new Date(dateStr + 'T12:00:00Z').toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  })
+}

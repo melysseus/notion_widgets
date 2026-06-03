@@ -56,6 +56,8 @@ export interface CelebrityListItem {
   rodden_rating: string | null
   professions: string[]
   image_url: string | null
+  sun_sign: number | null
+  moon_sign: number | null
   ascendant: Pick<Ascendant, 'sign' | 'sign_name'> | null
 }
 

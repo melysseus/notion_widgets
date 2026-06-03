@@ -9,13 +9,15 @@
 --
 -- planet_filters JSON shape:
 --   [{"planet": "sun", "sign": 5}, {"planet": "moon", "sign": 6}]
+-- ascendant_filter: sign number 1–12, for Rising sign filtering
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION search_celebrities(
-    name_query      text    DEFAULT NULL,
-    planet_filters  jsonb   DEFAULT '[]'::jsonb,
-    profession      text    DEFAULT NULL,
-    lim             int     DEFAULT 20,
-    off             int     DEFAULT 0
+    name_query        text    DEFAULT NULL,
+    planet_filters    jsonb   DEFAULT '[]'::jsonb,
+    ascendant_filter  int     DEFAULT NULL,
+    profession        text    DEFAULT NULL,
+    lim               int     DEFAULT 20,
+    off               int     DEFAULT 0
 )
 RETURNS TABLE (
     id               uuid,
@@ -28,6 +30,8 @@ RETURNS TABLE (
     image_url        text,
     ascendant_sign   smallint,
     ascendant_degree numeric,
+    sun_sign         smallint,
+    moon_sign        smallint,
     total_count      bigint
 )
 LANGUAGE sql STABLE SECURITY INVOKER AS $$
@@ -42,7 +46,12 @@ LANGUAGE sql STABLE SECURITY INVOKER AS $$
         c.image_url,
         ch.ascendant_sign,
         ch.ascendant_degree,
-        COUNT(*) OVER ()        AS total_count
+        -- Correlated subqueries hit idx_placements_planet_sign
+        (SELECT p.sign::smallint FROM placements p
+         WHERE p.chart_id = ch.id AND p.planet = 'sun'  LIMIT 1) AS sun_sign,
+        (SELECT p.sign::smallint FROM placements p
+         WHERE p.chart_id = ch.id AND p.planet = 'moon' LIMIT 1) AS moon_sign,
+        COUNT(*) OVER () AS total_count
     FROM celebrities c
     JOIN charts ch
       ON  ch.celebrity_id = c.id
@@ -51,6 +60,9 @@ LANGUAGE sql STABLE SECURITY INVOKER AS $$
     WHERE
         -- name search (uses pg_trgm GIN index)
         (name_query IS NULL OR c.name ILIKE '%' || name_query || '%')
+
+        -- rising sign filter (checks charts.ascendant_sign directly)
+        AND (ascendant_filter IS NULL OR ch.ascendant_sign = ascendant_filter)
 
         -- profession array filter
         AND (profession IS NULL OR profession = ANY(c.professions))
@@ -81,7 +93,6 @@ $$;
 -- ---------------------------------------------------------------------------
 -- filter_options
 -- Returns sign distribution per planet — drives the filter UI dropdowns.
--- Only includes planets + signs that actually exist in the database.
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION filter_options()
 RETURNS TABLE (
@@ -96,7 +107,7 @@ LANGUAGE sql STABLE SECURITY INVOKER AS $$
         COUNT(DISTINCT ch.celebrity_id) AS count
     FROM placements p
     JOIN charts ch
-      ON  ch.id          = p.chart_id
+      ON  ch.id           = p.chart_id
       AND ch.ayanamsa     = 'lahiri'
       AND ch.house_system = 'whole_sign'
     GROUP BY p.planet, p.sign
